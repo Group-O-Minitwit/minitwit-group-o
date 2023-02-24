@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Minitwit7.data;
 using Minitwit7.Models;
-
+using Minitwit7.schemas;
 
 namespace Minitwit7.Controllers
 {
@@ -13,6 +14,7 @@ namespace Minitwit7.Controllers
     public class MinitwitController : ControllerBase
     {
         private readonly DataContext _context;
+
 
         public MinitwitController(DataContext context) // Connect directly to the database 
         {
@@ -22,23 +24,22 @@ namespace Minitwit7.Controllers
 
         [HttpPost]
         [Route("/RegisterUser")]
-        public async Task<ActionResult<List<User>>> RegisterUser(User user) // registration endpoint - check user's registration errors on models
-        {                                                               //  we need to use  BCrypt.Net.BCrypt.HashPassword
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(_context.Users.ToList());
-        }
-
-        [HttpPost]
-        [Route("/AddUser")]
-        public async Task<ActionResult<List<User>>> AddUser(User user)
+        public async Task<ActionResult<List<User>>> RegisterUser(CreateUser user)
         {
-            _context.Users.Add(user);
+            User newUser = new User();
+
+
+            newUser.Email = user.Email;
+            newUser.Username = user.Username;
+            newUser.PwHash = user.PwHash;
+
+            await _context.Users.AddAsync(newUser);
             await _context.SaveChangesAsync();
 
-            return Ok(_context.Users.ToList());
+
+            return Ok(newUser);
         }
+
 
 
         [HttpGet]
