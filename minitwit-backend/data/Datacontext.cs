@@ -7,12 +7,17 @@ namespace Minitwit7.data
     {
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
-
+            
         }
 
         public DbSet<User> Users => Set<User>();
         public DbSet<Follower> Followers => Set<Follower>();
         public DbSet<Message> Messages => Set<Message>();
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,8 +57,8 @@ namespace Minitwit7.data
                 b.Property<int>("Flagged")
                     .HasColumnType("INTEGER");
 
-                b.Property<int>("PubDate")
-                    .HasColumnType("INTEGER");
+                b.Property<DateTime>("PubDate")
+                    .HasColumnType("timestamp with time zone");
 
                 b.Property<string>("text")
                     .IsRequired()
@@ -66,13 +71,13 @@ namespace Minitwit7.data
 
             modelBuilder.Entity<Follower>(b =>
             {
-                b.Property<int>("WhoId")
+                b.Property<int>("UserId")
                     .HasColumnType("INTEGER");
 
-                b.Property<int>("WhomId")
+                b.Property<int>("FollowsId")
                     .HasColumnType("INTEGER");
 
-                b.HasKey(x => new { x.WhoId, x.WhomId });
+                b.HasKey(x => new { x.UserId, x.FollowsId });
 
                 b.ToTable("Followers");
             });

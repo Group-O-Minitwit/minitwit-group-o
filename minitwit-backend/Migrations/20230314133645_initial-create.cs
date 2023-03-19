@@ -1,11 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace MiniTwit.Migrations
 {
     /// <inheritdoc />
-    public partial class initialmigration : Migration
+    public partial class initialcreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -14,13 +16,12 @@ namespace MiniTwit.Migrations
                 name: "Followers",
                 columns: table => new
                 {
-                    WhoId = table.Column<int>(type: "INTEGER", nullable: false),
-                    WhomId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    FollowsId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Followers", x => new { x.WhoId, x.WhomId });
+                    table.PrimaryKey("PK_Followers", x => new { x.UserId, x.FollowsId });
                 });
 
             migrationBuilder.CreateTable(
@@ -28,10 +29,10 @@ namespace MiniTwit.Migrations
                 columns: table => new
                 {
                     MessageId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     AuthorId = table.Column<int>(type: "INTEGER", nullable: false),
                     text = table.Column<string>(type: "TEXT", nullable: false),
-                    PubDate = table.Column<int>(type: "INTEGER", nullable: false),
+                    PubDate = table.Column<DateTime>(type: "Date", nullable: false),
                     Flagged = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
@@ -44,8 +45,8 @@ namespace MiniTwit.Migrations
                 columns: table => new
                 {
                     UserId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Username = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Username = table.Column<string>(type: "TEXT", nullable: false),
                     Email = table.Column<string>(type: "TEXT", nullable: false),
                     PwHash = table.Column<string>(type: "TEXT", nullable: false)
                 },

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Minitwit7.data;
 using Minitwit7.Models;
 using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
 
 namespace Minitwit7.Controllers
 {
@@ -14,12 +15,10 @@ namespace Minitwit7.Controllers
     public class SimulatorController : ControllerBase
     {
         private readonly DataContext _context;
-        private int LATEST;
 
         public SimulatorController(DataContext context) // Connect directly to the database 
         {
             _context = context;
-            LATEST = 0;
         }
 
         [HttpGet]
@@ -27,142 +26,262 @@ namespace Minitwit7.Controllers
         public ActionResult<LatestRes> Latest()
         {
             LatestRes res = new LatestRes();
-            res.latest = helpers.getLatest();
+            res.latest = Helpers.GetLatest();
             return Ok(res);
         }
 
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesErrorResponseType(typeof(Error))]
         [Route("/register")]
-        public async Task<ActionResult<List<User>>> RegisterUser(CreateUser user, int latest = -1) // registration endpoint - check user's registration errors on models
-        {                                                               //  we need to use  BCrypt.Net.BCrypt.HashPassword
-            helpers.updateLatest(latest);
+        public async Task<ActionResult<List<User>>> RegisterUser([FromBody] CreateUser user, int latest = -1)
+        {
+            Helpers.UpdateLatest(latest);
 
             User newUser = new User();
 
             if (user.username == null || user.username == "")
                 return BadRequest(new Error("You have to enter a username"));
-            
+
             else if (user.email == null || !user.email.Contains("@"))
                 return BadRequest(new Error("You have to enter a valid email address"));
 
-            else if (user.password == null || user.password == "")
+            else if (user.pwd == null || user.pwd == "")
                 return BadRequest(new Error("You have to enter a password"));
 
-            else if (helpers.getUserIdByUsername(_context, user.username) != -1)
+            else if (Helpers.GetUserIdByUsername(_context, user.username) != -1)
                 return BadRequest(new Error("The username is already taken"));
-                
-            
+
+
             newUser.Username = user.username;
             newUser.Email = user.email;
 
+            // Hashing the users password is done as stated in this post: https://stackoverflow.com/questions/4181198/how-to-hash-a-password
 
-            newUser.PwHash = user.password;
-            
-           
+            // Creating the salt for the password hash
+            byte[] salt = new byte[16];
+            using (RandomNumberGenerator generator = RandomNumberGenerator.Create())
+            {
+                generator.GetBytes(salt);
+            }
+
+            // Hash the password with the salt
+            var pbkdf2 = new Rfc2898DeriveBytes(user.pwd, salt, 10000, HashAlgorithmName.SHA256);
+            byte[] hash = pbkdf2.GetBytes(20);
+
+            // combine the salt and password into one variable, with the salt in the first 16 bytes,
+            // and the password in the last 20.
+            byte[] hashBytes = new byte[36];
+            Array.Copy(salt, 0, hashBytes, 0, 16);
+            Array.Copy(hash, 0, hashBytes, 16, 20);
+
+            // store the salt + hashed password in a string
+            string savedPasswordHash = Convert.ToBase64String(hashBytes);
+            newUser.PwHash = savedPasswordHash;
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return Ok(_context.Users.ToList());
+            return NoContent();
         }
-
-        [HttpPost]
-        [Route("/AddUser")]
-        public async Task<ActionResult<List<User>>> AddUser(User user, int latest = - 1)
-        {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(_context.Users.ToList());
-        }
-
 
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [Route("/getAllUsers")]
         public async Task<ActionResult<List<User>>> GetUsers()
         {
-            var users = _context.Users.ToList();
+            List<User> users = _context.Users.ToList();
+
+            await Task.CompletedTask;
 
             return Ok(users);
         }
 
-        [HttpPost]
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [Route("/msgs")]
-        public async Task<ActionResult<List<Message>>> AddUMsg(Message msg, int latest = -1)
+        public async Task<ActionResult<List<MessageRes>>> GetMsgs(int no = 100, int latest = -1)
         {
-            helpers.updateLatest(latest);
-            _context.Messages.Add(msg);
-            await _context.SaveChangesAsync();
+            Helpers.UpdateLatest(latest);
 
-            return Ok(_context.Messages.ToList());
-        }
+            List<Message> msgs = _context.Messages.OrderByDescending(m => m.PubDate).Take(no).ToList();
 
-        [HttpGet]
-        [Route("/msgs")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<ActionResult<List<Message>>> GetMsgs(int latest = -1)
-        {
-            helpers.updateLatest(latest);
-            var msgs = _context.Messages.ToList();
-            if(msgs == null){return NoContent();}
-            else{return Ok(msgs);}
-        }
-
-        [HttpGet]
-        [Route("/msgs/{username}")]
-        public async Task<ActionResult<List<Message>>> GetMsgsByUser(string username, int latest = -1)
-        {
-            helpers.updateLatest(latest);
-            var user = _context.Users.Where(x => x.Username == username).FirstOrDefault();
-            if(user == null) { return NoContent();}
-            var msgs = _context.Messages.Where(x => x.AuthorId == user.UserId).ToList();
-
-            return Ok(msgs);
-        }
-
-        [HttpPost]
-        [Route("/fllws")]
-        public async Task<ActionResult<List<Follower>>> AddFollower(Follower follower, int latest = -1)
-        {
-            helpers.updateLatest(latest);
-            _context.Followers.Add(follower);
-            await _context.SaveChangesAsync();
-
-            return Ok(_context.Followers.ToList());
-        }
-
-        [HttpGet]
-        [Route("/fllws")]
-        public async Task<ActionResult<List<User>>> GetUserFollowers(string username, int latest = -1)
-        {
-            helpers.updateLatest(latest);
-            var followers = new List<User>();
-            var user = _context.Users.Where(x => x.Username == username).FirstOrDefault();
-            var flws = _context.Followers.Where(x => x.WhoId == user.UserId).ToList();
-            foreach (var follower in flws)
+            List<MessageRes> res = new List<MessageRes>();
+            foreach (Message msg in msgs)
             {
-                var userF = _context.Users.Where(x => x.UserId == follower.WhomId).FirstOrDefault();
-                followers.Add(userF);
+                string username = _context.Users.Where(u => u.UserId == msg.AuthorId).First().Username;
+                res.Add(new MessageRes()
+                {
+                    content = msg.text,
+                    pub_date = msg.PubDate,
+                    user = username
+                });
             }
 
+            await Task.CompletedTask;
 
-            return Ok(followers);
+            return Ok(res);
+        }
+
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesErrorResponseType(typeof(Error))]
+        [Route("/msgs/{username}")]
+        public async Task<ActionResult<List<Message>>> AddUMsg(string username, [FromBody] CreateMessage msg, int latest = -1)
+        {
+            Helpers.UpdateLatest(latest);
+
+            int userId = Helpers.GetUserIdByUsername(_context, username);
+            if (userId == -1)
+                return BadRequest(new Error("Username does not match a user"));
+
+            Message newMsg = new Message()
+            {
+                AuthorId = userId,
+                text = msg.content,
+                PubDate = DateTime.UtcNow,
+                Flagged = 0
+            };
+
+            _context.Messages.Add(newMsg);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Route("/msgs/{username}")]
+        public async Task<ActionResult<List<MessageRes>>> GetMsgsByUser(string username, int latest = -1)
+        {
+            Helpers.UpdateLatest(latest);
+
+            User? user = _context.Users.Where(x => x.Username == username).FirstOrDefault();
+
+            if (user == null)
+                return BadRequest(new Error("Username does not match a user"));
+
+            List<Message> msgs = _context.Messages.Where(x => x.AuthorId == user.UserId).ToList();
+
+            List<MessageRes> res = new List<MessageRes>();
+            foreach (Message msg in msgs)
+            {
+                res.Add(new MessageRes()
+                {
+                    content = msg.text,
+                    user = username,
+                    pub_date = msg.PubDate
+                });
+            }
+
+            await Task.CompletedTask;
+
+            return Ok(res);
+        }
+
+        [HttpPost]
+        [ProducesErrorResponseType(typeof(Error))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [Route("/fllws/{username}")]
+        public async Task<ActionResult<List<Follower>>> AddFollower(string username, [FromBody] FollowRequest folReq, int latest = -1)
+        {
+            Helpers.UpdateLatest(latest);
+
+            int userId = Helpers.GetUserIdByUsername(_context, username);
+            if (userId == -1)
+                return BadRequest(new Error("Username does not match a user"));
+
+
+            if (folReq.follow != null && folReq.unfollow == null)
+            {
+                int req_userId = Helpers.GetUserIdByUsername(_context, folReq.follow);
+                if (req_userId == -1)
+                    return BadRequest(new Error("The user to follow was not found"));
+
+                Follower? followerEntity = _context.Followers.Where(x => x.UserId == userId && x.FollowsId == req_userId).FirstOrDefault();
+
+                if (followerEntity != null)
+                    return BadRequest(new Error("The user is already following"));
+
+                _context.Followers.Add(new Follower()
+                {
+                    UserId = userId,
+                    FollowsId = req_userId
+                });
+            }
+            else if (folReq.unfollow != null && folReq.follow == null) {
+                int req_userId = Helpers.GetUserIdByUsername(_context, folReq.unfollow);
+                if (req_userId == -1)
+                    return BadRequest(new Error("The user to follow was not found"));
+
+                Follower? followerEntity = _context.Followers.Where(x => x.UserId == userId && x.FollowsId == req_userId).FirstOrDefault();
+
+                if (followerEntity == null)
+                    return BadRequest(new Error("The user isn't following"));
+
+                _context.Followers.Remove(_context.Followers.Where(x => x.UserId == userId && x.FollowsId == req_userId).First());
+            }
+            else
+            {
+                return BadRequest(new Error("You need to specify ONE of either follow or unfollow"));
+            }
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpGet]
+        [ProducesErrorResponseType(typeof(Error))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("/fllws/{username}")]
+        public async Task<ActionResult<List<User>>> GetUserFollowers(string username, int no = 100, int latest = -1)
+        {
+            Helpers.UpdateLatest(latest);
+
+            int userId = Helpers.GetUserIdByUsername(_context, username);
+            if (userId == -1)
+                return BadRequest("Username does not match a user");
+
+            List<string> followingRes = _context.Followers
+                .Join(
+                    _context.Users,
+                    f => f.FollowsId,
+                    u => u.UserId,
+                    (f, u) => new
+                    {
+                        userId = f.UserId,
+                        Follows = u.Username
+                    }
+                    )
+                .Where(t => t.userId == userId).Select(v => v.Follows).ToList();
+
+            await Task.CompletedTask;
+
+            return Ok(new FollowsRes() { follows=followingRes});
         }
     }
 
-    public static class helpers
+    public static class Helpers
     {
         private static int LATEST = 0;
 
-        public static int getLatest()
+        public static int GetLatest()
         {
             return LATEST;
         }
 
-        public static void updateLatest(int latest)
+        public static void UpdateLatest(int latest)
         {
             if (latest != -1)
             {
@@ -174,7 +293,7 @@ namespace Minitwit7.Controllers
             }
         }
 
-        public static int getUserIdByUsername(DataContext _context, string username)
+        public static int GetUserIdByUsername(DataContext _context, string username)
         {
             User? u = _context.Users.Where(u => u.Username == username).FirstOrDefault();
             if (u != null)
@@ -204,6 +323,29 @@ namespace Minitwit7.Controllers
     {
         public string username { get; set; }
         public string email { get; set; }
-        public string password { get; set; }
+        public string pwd { get; set; }
+    }
+
+    public class MessageRes
+    {
+        public string content { get; set; }
+        public DateTime pub_date { get; set; }
+        public string user { get; set; }
+    }
+
+    public class CreateMessage
+    {
+        public string content { get; set;}
+    }
+
+    public class FollowsRes
+    {
+        public List<string> follows { get; set; }
+    }
+
+    public class FollowRequest
+    {
+        public string? follow { get; set; } = null;
+        public string? unfollow { get; set; } = null;
     }
 }
