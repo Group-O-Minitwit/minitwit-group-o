@@ -16,7 +16,6 @@ function Login() {
                 <div className="login-form">
 
                     <input type="text" placeholder='Username' className="input-field form-item" />
-                    <input type="text" placeholder='E-mail' className="input-field form-item" />
                     <input type="password" placeholder='Password' className="input-field form-item" />
                     <button className="action-button form-item">Login</button>
                     <p className='form-item text-field'>

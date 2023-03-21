@@ -29,3 +29,9 @@
     padding: 2px;
     text-align: center;
 }
+
+.back-button {
+    background-color: #a8dadc;
+    width: 128px;
+    height: 56px;
+}
