@@ -5,6 +5,7 @@ using Xunit;
 using Minitwit7.Controllers;
 using Minitwit7.data;
 using Minitwit7.Models;
+using static Minitwit7.Controllers.SimulatorController;
 
 public class MinitwitTests : IDisposable
 {
