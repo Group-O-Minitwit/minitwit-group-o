@@ -4,11 +4,12 @@ using Microsoft.Extensions.Configuration;
 using Npgsql.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using System;
+using Prometheus;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -24,7 +25,32 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseExceptionHandler("/Error");
 }
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseStaticFiles();
+app.UseRouting();
+
+// Use Prometheus middleware.
+// Capture metrics about all received HTTP requests.
+app.UseHttpMetrics();
+app.UseMetricServer();
+
+app.UseAuthorization();
+
+
+app.UseEndpoints(endpoints =>
+{
+    // Enable the /metrics page to export Prometheus metrics.
+    //http://localhost:9090/
+    //Open http://localhost:9090/metrics to see the metrics.
+    endpoints.MapMetrics();
+});
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -38,11 +64,7 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 }
 
-
-//app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
