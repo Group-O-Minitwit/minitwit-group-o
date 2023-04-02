@@ -92,6 +92,18 @@ namespace Minitwit7.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("/getUser")]
+        public async Task<ActionResult<List<User>>> GetUserbyUsername(string username)
+        {
+            User user = _context.Users.Where(x => x.Username == username).FirstOrDefault();
+
+            await Task.CompletedTask;
+
+            return Ok(user);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [Route("/getAllUsers")]
         public async Task<ActionResult<List<User>>> GetUsers()
         {
