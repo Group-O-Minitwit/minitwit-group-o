@@ -6,15 +6,11 @@ services:
        POSTGRES_USER: dbuser
        POSTGRES_PASSWORD: dbuserpassword
      ports:
-      - "5432:5432"
+      - "5432:5423"
      volumes:
       - ./local-volumes/database-data:/var/lib/postgresql/data # To run locally uncomment this
       # - /mnt/volumedb/data:/var/lib/postgresql/data # To run on server uncomment this
      restart: always
-
-     depends_on:
-     - grafana
-     - prometheus
 
   api:
     image: itudevopsgroupo/minitwit-backend:runtime
@@ -22,8 +18,6 @@ services:
       context: ./minitwit-backend
     depends_on:
     - db
-    - grafana
-    - prometheus
     ports:
     - "5050:5050"
 
@@ -32,6 +26,8 @@ services:
     container_name: prometheus
     volumes:
       - ./remote_files/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - api
     ports:
       - "9090:9090"
 
@@ -42,5 +38,7 @@ services:
       - ./local-volumes/grafana-datasources:/etc/grafana/provisioning/datasources # To run locally uncomment this
     #  - /mnt/volumedb/grafana-data:/var/lib/grafana # To run on server uncomment this
       - ./local-volumes/grafana-data:/var/lib/grafana # To run locally uncomment this
+    depends_on:
+      - prometheus
     ports:
       - "3000:3000"
