@@ -1,8 +1,7 @@
-import React, { useSyncExternalStore } from 'react';
+import React, {useState} from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import '../style/registration.css'
-import { Oval } from 'react-loader-spinner';
+
 
 function Registration(){
 

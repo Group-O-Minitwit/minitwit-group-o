@@ -1,5 +1,4 @@
-import React, { useContext } from 'react';
-import { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import '../style/timeline.css'
 import  UserContext  from '../userContext';
 import { CgProfile } from 'react-icons/cg';
