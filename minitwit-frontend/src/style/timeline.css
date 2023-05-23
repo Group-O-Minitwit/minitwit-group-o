@@ -1,11 +1,7 @@
 .containerBox {
   display: flex;
   justify-content: center;
-  background-color: hsl(0, 0%, 100%);
   margin: 150px;
-  border: 1px solid black;
-  border-color: hsl(0, 0%, 0%);
-  border-radius: 5px;
 }
 
 .post-box {
