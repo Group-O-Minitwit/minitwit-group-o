@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { useState, useEffect } from 'react';
 import '../style/registration.css'
+import { Oval } from 'react-loader-spinner';
 
 function Registration(){
 
+    const [loading, setLoading] = useState(false);
     //On click of back button go to login
     let navigation = useNavigate();
     const goBack = () => {
@@ -17,8 +19,7 @@ function Registration(){
         const username = document.querySelector('.js--username-register').value.trim();
         const email =  document.querySelector('.js--email-register').value.trim();
         const password =  document.querySelector('.js--password-register').value.trim();
-
-        console.log(username, email, password);
+        setLoading(true);
         fetch("/api/register",
         {
             headers: {
@@ -28,8 +29,17 @@ function Registration(){
             method: "POST",
             body: JSON.stringify({username: username, email: email, pwd: password })
         })
-        .then(function(res) {console.log(res)})
-        .catch(function(res) {console.log(res)});
+        .then(function(res) {
+            if(res.ok){
+                setLoading(false);
+                let path = '/login';
+                navigation(path);
+            }
+            throw Error(res);
+        })
+        .catch( err => 
+            console.log('Something went wrong')
+        );
     }
 
     return(

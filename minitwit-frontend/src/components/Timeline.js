@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import '../style/timeline.css'
 import  UserContext  from '../userContext';
 import { CgProfile } from 'react-icons/cg';
+import { Oval } from 'react-loader-spinner';
 
 
 function Timeline(){
@@ -14,15 +15,15 @@ function Timeline(){
     }
     const {loggedUser, login, logout} = useContext(UserContext);
     const url = `/api/fllws/${loggedUser}`
-
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
 
       const fetchMsgs = async (f) => {
+        setLoading(true);
         fetch("/api/msgs", {
             method: 'GET'
           }).then((response) => {
-            console.log(response);
             return response.json();
           })
             .then((data) => {
@@ -31,7 +32,6 @@ function Timeline(){
                 const follow = f.find(follower => follower.name === copy.user);
 
                 if(follow != null) {
-                    console.log(follow);
                     copy.follow = follow.name;
                 }
                 return copy
@@ -39,9 +39,10 @@ function Timeline(){
               });
 
               setMsgs(finalMsgs);
-
+              setLoading(false);
             })
             .catch((error) => console.log(error));
+
           }
 
           const fetchFollows = async () => {
@@ -89,6 +90,19 @@ function Timeline(){
         }
 
     }
+
+    if(loading) return (
+      <div className="containerBox">
+        <div className="centered">
+          <Oval 
+            height={80}
+            width={80}
+            color="#f1faee"
+          />
+        </div>
+      </div>
+      
+    );
 
     return (
       <>
