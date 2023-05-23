@@ -17,14 +17,14 @@ using Prometheus;
 var builder = WebApplication.CreateBuilder(args);
 
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-	var configuration = new ConfigurationBuilder()
-		.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-		.AddJsonFile(
-			$"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json",
-			optional: true)
-		.Build();
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile(
+        $"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json",
+        optional: true)
+    .Build();
 
-builder.Host.UseSerilog((context, configuration)  =>
+builder.Host.UseSerilog((context, configuration) =>
     configuration.Enrich.FromLogContext()
     .Enrich.WithMachineName()
     .WriteTo.Debug()
@@ -79,15 +79,16 @@ app.UseMetricServer();
 
 app.UseAuthorization();
 
-
 app.UseEndpoints(endpoints =>
 {
     // Enable the /metrics page to export Prometheus metrics.
     //http://localhost:9090/
     //Open http://localhost:9090/metrics to see the metrics.
+    endpoints.MapControllers();
     endpoints.MapMetrics();
 });
 
+// Swagger is mainly used for debugging, but we decided to leave it to easily access the API.
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -107,8 +108,5 @@ using (var scope = app.Services.CreateScope())
 //app.UseHttpsRedirection();
 
 app.UseCors("cors");
-
-app.UseAuthorization();
-app.MapControllers();
 
 app.Run();
