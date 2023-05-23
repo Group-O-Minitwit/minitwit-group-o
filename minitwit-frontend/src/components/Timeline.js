@@ -72,7 +72,7 @@ function Timeline(){
         body = {follow: null, unfollow: user };
       }
 
-      var url = `/api/fllws/${loggedUser}`
+      let url = `/api/fllws/${loggedUser}`
       const response = await fetch(url ,
       {
             headers: {
