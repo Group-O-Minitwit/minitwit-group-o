@@ -33,8 +33,9 @@ namespace Minitwit.Controllers
             int latest = Helpers.GetLatest();
             int userCount = _context.Users.Count();
             _logger.LogInformation("Accessed localhost:5050", DateTime.UtcNow);
-            
-            return new Status {
+
+            return new Status
+            {
                 State = "Running",
                 LatestRequest = latest,
                 UserCount = userCount
@@ -66,7 +67,7 @@ namespace Minitwit.Controllers
             if (user.username == null || user.username == "")
                 return BadRequest(new Error("You have to enter a username"));
 
-            else if (user.email == null || !user.email.Contains("@"))
+            else if (user.email == null || !user.email.Contains('@'))
                 return BadRequest(new Error("You have to enter a valid email address"));
 
             else if (user.pwd == null || user.pwd == "")
@@ -107,7 +108,7 @@ namespace Minitwit.Controllers
 
             _logger.LogInformation("Registration successful", DateTime.UtcNow);
             return NoContent();
-            
+
         }
 
         [HttpGet]
@@ -128,14 +129,16 @@ namespace Minitwit.Controllers
         [Route("/login")]
         public async Task<ActionResult<string>> Login([FromBody] LoginRequest req)
         {
-            if (req == null){
+            if (req == null)
+            {
                 _logger.LogError("Unable to process request", DateTime.UtcNow);
                 return Unauthorized(new Error("Unable to process login request", 401));
             }
 
             User? user = _context.Users.Where(u => u.Username == req.username).FirstOrDefault();
 
-            if (user == null){
+            if (user == null)
+            {
                 _logger.LogError("Username does not match a user", DateTime.UtcNow);
                 return Unauthorized(new Error("Username does not match a user", 401));
             }
