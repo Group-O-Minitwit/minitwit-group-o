@@ -28,3 +28,7 @@ The project also includes a Grafana dashboard that can be accessed at http://157
 
 ## Prometheus
 The project also includes a Prometheus endpoint that can be accessed at http://157.230.79.99:9090.
+
+## App UI
+
+ => http://157.230.79.99:3001/
