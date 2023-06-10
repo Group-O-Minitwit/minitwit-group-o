@@ -63,7 +63,6 @@ services:
         - elk_elasticsearch_data:/usr/share/elasticsearch/data
     networks:
         - elk
-    mem_limit: 2g
 
   kibana:
     image: "docker.elastic.co/kibana/kibana:7.2.0"
