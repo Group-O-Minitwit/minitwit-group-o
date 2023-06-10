@@ -7,6 +7,8 @@ function Login() {
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
     const {loggedUser, login, logout} = useContext(UserContext);
     let navigation = useNavigate();
     const goToRegister = () => {
@@ -48,7 +50,8 @@ function Login() {
         } else {
             // Login failed, display error message
             const errorData = await response.json();
-            //setErrorMessage(errorData.message);
+            setError(true);
+            setErrorMsg(errorData.error_msg);
         }
 
 
@@ -59,10 +62,11 @@ function Login() {
         <div className="container">
             <div className='wrapper'>
                 <div className="login-form">
-
-
+                    {error
+                        ? <p className="form-item text-field">{errorMsg}</p>
+                        : <p></p>
+                    }
                     <input type="username" placeholder='Username' value={username} onChange={handleUsernameChange} className="input-field form-item"/>
-                    <input type="text" placeholder='E-mail' className="input-field form-item" />
                     <input type="password" placeholder='Password' value={password} onChange={handlePasswordChange} className="input-field form-item"/>
                     <button className="action-button form-item" type="submit">Login</button>
                     <p className='form-item text-field'>
